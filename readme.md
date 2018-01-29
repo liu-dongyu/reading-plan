@@ -1,5 +1,3 @@
-阅读计划
-
 ### java
 
 1. [x] 《Head First Java》[阅读笔记](https://github.com/liu-dongyu/reading-plan/blob/master/head-first-java/read-reviews.md)   [示例代码](https://github.com/liu-dongyu/reading-plan/tree/master/head-first-java/code)
@@ -24,7 +22,9 @@
 
 ### javascript
 
-1. [ ] 《你不知道的 javascript》上中下卷
+1. [ ] 《你不知道的 javascript》上卷
+2. [ ] 《你不知道的 javascript》中卷
+3. [ ] 《你不知道的 javascript》下卷
 
 ### 数据库
 
