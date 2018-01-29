@@ -18,7 +18,7 @@
 
 ### 设计模式
 
-1. [ ] 《Head First Design》
+1. [ ] 《Head First Design》[阅读笔记](https://github.com/liu-dongyu/reading-plan/blob/master/head-first-design/read-reviews.md) [示例代码](https://github.com/liu-dongyu/reading-plan/tree/master/head-first-design/code)
 
 ### javascript
 
