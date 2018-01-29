@@ -2,7 +2,7 @@
 
 ### java
 
-1. [x] 《Head First Java》
+1. [x] 《Head First Java》[阅读笔记](https://github.com/liu-dongyu/reading-plan/blob/master/head-first-java/read-reviews.md)   [示例代码](https://github.com/liu-dongyu/reading-plan/tree/master/head-first-java/code)
 2. [ ] 《Java 并发编程实战》
 3. [ ] 《深入理解 Java 虚拟机》
 4. [ ] 《effective java》
