@@ -1,22 +1,24 @@
 ## 第一章
 
+> 策略模式
+
+#### 定义
+
+1. 策略模式定义了算法族，分别封装起来，让它们之间可以相互替换，此模式让算法的变化独立于使用算法的客户
+2. 可以将一组行为类定义为算法族，例如下方代码中的`FlyWithWings`就是算法族的一员
+3. 实例化对象可以任意选择算法族，在运行时动态改变行为
+4. 假设某个行为在不同的子类中不尽相同，那么则应当将该行为抽离为行为类，分开容易变更和不容易变更的代码
+5. 不要将行为具体实现在父类或者子类中（针对实现编程），应该考虑能否动态的给子类添加某个行为（针对接口编程），针对接口编程的关键在于多态，在父类的实例变量中定义行为抽象类或接口，子类实例化时动态的选择行为子类（继承了行为抽象类或接口的类）
+6. 设计行为抽象类或接口时，应尽可能考虑复用性，不要和某个类强关联
+7. 两个类结合起来使用，就是组合（composition），使用组合建立的系统具备很大的弹性
+
 #### 设计原则
 
-> 1. 找出应用中可能需要变化之处，把它们独立出来，不要和那些不需要变化的代码混在一起
-> 2. 针对接口编程（针对超类编程），而不是针对实现编程。
-> 3. 多用组合，少用继承
+1. 找出应用中可能需要变化之处，把它们独立出来，不要和那些不需要变化的代码混在一起
+2. 针对接口编程（针对超类编程），而不是针对实现编程。
+3. 多用组合，少用继承
 
-1. 假设某个行为在不同的子类中不尽相同，那么则应当将该行为抽离为行为类，分开容易变更和不容易变更的代码
-2. 不要将行为具体实现在父类或者子类中（针对实现编程），应该考虑能否动态的给子类添加某个行为（针对接口编程），针对接口编程的关键在于多态，在父类的实例变量中定义行为抽象类或接口，子类实例化时动态的选择行为子类（继承了行为抽象类或接口的类）
-3. 设计行为抽象类或接口时，应尽可能考虑复用性，不要和某个类强关联
-4. 两个类结合起来使用，就是组合（composition），使用组合建立的系统具备很大的弹性
-
-#### 策略模式
-
-> 策略模式定义了算法族，分别封装起来，让它们之间可以相互替换，此模式让算法的变化独立于使用算法的客户
-
-1. 文中将一组行为类定义为算法族，例如下方代码中的`FlyWithWings`就是算法族的一员
-2. 实例化对象可以任意选择算法族，在运行时动态改变行为
+#### 示例代码
 
 ```java
 // 将行为抽离为行为接口，单独定义一个接口是为了可以在Duck类中使用使用多态
@@ -61,17 +63,21 @@ class ChapterOne {
 
 ## 第 2 章
 
-#### 观察者模式
+> 观察者模式（注意：在 java9 中，内置的观察者模式已经被废弃 [具体原因](https://bugs.openjdk.java.net/browse/JDK-8154801)）
 
-**注意：在 java9 中，内置的观察者模式已经被废弃[具体原因](https://bugs.openjdk.java.net/browse/JDK-8154801)**
+#### 定义
 
-> 观察者模式：定义了对象之间的一对多依赖，这样一来，当一个对象改变状态，它的所有依赖者都会收到通知并自动更新  
-> 设计原则： 为交互对象之间的松耦合设 计而努力
+1. 定义了对象之间的一对多依赖，这样一来，当一个对象改变状态，它的所有依赖者都会收到通知并自动更新
+2. 主题（也就是被观察者）用一个共同的接口来更新观察者
+3. 观察者和被观察者之间用松耦合方式结合，可观察者不知道观察者的细节，只知道观察者实现了注册更新接口
+4. 被观察者可以使用主动推或等待观察者主动拉数据
+5. 有多个观察者时，通知的先后顺序不固定
 
-1. 主题（也就是被观察者）用一个共同的接口来更新观察者
-2. 观察者和被观察者之间用松耦合方式结合，可观察者不知道观察者的细节，只知道观察者实现了注册更新接口
-3. 被观察者可以使用主动推或等待观察者主动拉数据，文章认为主动推的方式更正确
-4. 有多个观察者时，通知的先后顺序不固定
+#### 设计原则
+
+为交互对象之间的松耦合设 计而努力
+
+#### 示例代码
 
 ```java
 import java.util.ArrayList;
@@ -176,6 +182,90 @@ public class ChapterTwo {
 
     weatherData.setMeasurements(80, 65, 30.4f);
     weatherData.setMeasurements(82, 70, 29.2f);
+  }
+}
+```
+
+---
+
+## 第三章
+
+> 装饰者模式
+
+#### 定义
+
+在不改变原类文件以及不使用继承的情况下，动态地将责任附加到对象上，从而实现动态拓展一个对象的功能。它是通过创建一个包装对象，也就是装饰来包裹真实的对象
+
+#### 设计原则
+
+1. 多用组合，少用继承
+2. 开放-关闭原则：类应该对拓展开放，对修改关闭
+
+#### 解读
+
+ <img src="./img/1.png" width="359" height="345.5"  />
+
+1. `Component`是通常是抽象类或接口，定义了属性和方法，方法一般由子类实现，该类主要用于约束继承树的行为，使得装饰者和被装饰者具有相同的超类型
+2. `ConcreteComponent`继承了`Component`，实现了相应的方法，通常作为被装饰者存在
+3. `Decorator`也继承了`Component`，可以是抽象类或接口，代表一类装饰者
+4. `ConcreteDecorator`继承了`Decorator`，是具体的装饰者，利用组合的特性，每个装饰者内都有一个实例变量保存`Component`的引用，使得`ConcreteDecorator`即有`Component`的属性和方法，又能拓展自己的特性
+
+#### 示例代码
+
+```java
+// 装饰者和被装饰者的超类
+abstract class Beverage {
+  String description = "Unknown Beverage";
+
+  public String getDescription() {
+    return description;
+  }
+
+  public abstract double cost();
+}
+
+// 一类装饰者的抽象类
+abstract class CondimentDecorator extends Beverage {
+  public abstract String getDescription();
+}
+
+// 具体被装饰者
+class Espresso extends Beverage {
+  public Espresso() {
+    description = "Espresso";
+  }
+
+  public double cost() {
+    return 1.99;
+  }
+}
+
+// 具体装饰者
+class Mocha extends CondimentDecorator {
+  // 记录被装饰者
+  Beverage beverage;
+
+  public Mocha(Beverage beverage) {
+    this.beverage = beverage;
+  }
+
+  public String getDescription() {
+    return beverage.getDescription() + ", Mocha";
+  }
+
+  public double cost() {
+    return .20 + beverage.cost();
+  }
+}
+
+public class ChapterThree {
+  public static void main(String[] args) {
+    Beverage espresso = new Espresso();
+
+    // 用装饰者包裹被装饰对象
+    Beverage mocha = new Mocha(espresso);
+
+    System.out.println(mocha.getDescription() + " " + mocha.cost());
   }
 }
 ```
