@@ -16,8 +16,7 @@
 
 ### 数据库
 
-1. [ ] 《mysql 必知必会》
-2. [ ] 《SQL 进阶教程》
+1. [ ] 《SQL 进阶教程》 [阅读笔记](https://github.com/liu-dongyu/reading-plan/blob/master/sql-advanced-terrain/note.md)
 
 ### 算法
 
