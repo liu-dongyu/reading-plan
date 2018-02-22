@@ -195,3 +195,72 @@ if (bar) {
 ```
 
 如上代码，在 es6 中，可以定义`let`以及显示的块级作用域`{}`，以`let`声明的变量就不会存在于外部作用域中，只在当前块级作用域。`const`也可以用来定义块级作用域，但`const`的内容一经声明，不可以再改变。块级作用域的变量会在使用过后被垃圾回收
+
+---
+
+## 第四章 提升
+
+* `var a = 2;`实际上是两个声明，`var a`会在编译阶段进行，`a = 2`会等待执行阶段。将声明移动到自身顶层作用域的过程就称为提升
+* 声明本身会被提升，而包括函数表达式的赋值在内的赋值操作并不会提升。
+
+```javascript
+console.log(a); // undefined
+var a = 2;
+
+// 上面的代码实际如下
+
+var a;
+console.log(a); // undefined
+a = 2;
+```
+
+```javascript
+foo(); // 1
+
+function foo() {
+  conosole.log(1);
+}
+
+// 由于函数声明也会被提升，所以上面的代码实际如下
+
+function foo() {
+  console.log(1);
+}
+
+foo(); // 1
+```
+
+```javascript
+foo(); // typeError
+
+var foo = function() {
+  console.log(1);
+};
+
+// 由于函数表达式function本身不会被提升，所以上面的代码实际如下
+
+var foo;
+
+foo(); // 对非函数变量使用函数()操作，所以会报typeError
+
+foo = function() {
+  console.log(1);
+};
+```
+
+```javascript
+// 由于存在函数声明优先的机制，无论var foo在哪定义，funtion foo都会优先不会被覆盖
+foo(); // 1
+
+function foo() {
+  console.log(1);
+}
+
+var foo = function() {
+  console.log(2);
+};
+```
+
+---
+
+...
