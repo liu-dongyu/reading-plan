@@ -263,4 +263,222 @@ var foo = function() {
 
 ---
 
+## 第五章 作用域闭包
+
+### 定义
+
+当函数可以记住并访问所在的词法作用域，且函数是在当前词法作用域之外执行的，就产生了闭包，可以理解为闭包就是对该函数的引用
+
+```javascript
+function foo() {
+  var a = 1;
+
+  function bar() {
+    console.log(1);
+  }
+
+  bar();
+}
+```
+
+* 上述代码`bar`能记住并访问`foo`作用域的变量，但`bar`并没有在当前词法作用域外运行，所以准确来说并没有完全形成闭包，`bar`对`a`的引用是词法作用域的 RHS 引用查询，查询规则也属于闭包的一部分
+
+```javascript
+function foo() {
+  var a = 2;
+
+  function bar() {
+    console.log(a);
+  }
+
+  return bar;
+}
+
+var baz = foo(); // 这里形成了闭包
+baz(); // 2
+```
+
+* 上述代码中，可能有人会期待`foo`执行完毕之后，内部作用域会被垃圾回收。但事实上并不会，`bar`能访问并记住了`foo`作用域的变量，且在外部作用域中被调用，所以`var baz = foo();`处形成了闭包，闭包并不会被垃圾回收
+
+```javascript
+function foo() {
+  var a = 2;
+  function baz() {
+    console.log(a); // 2
+  }
+  bar(baz);
+}
+
+function bar(fn) {
+  fn(); // 实际上为baz()，这里形成了闭包
+}
+```
+
+* 上述代码，`baz`能够访问并记住`foo`作用域内的变量，且在外部作用域被引用，所以我们可以认为`baz()`形成了闭包
+
+```javascript
+var fn;
+function foo() {
+  var a = 2;
+  function baz() {
+    console.log(a);
+  }
+
+  fn = baz;
+}
+
+function bar() {
+  fn(); // 实际上为baz()，这里形成了闭包
+}
+
+foo();
+bar(); // 2
+```
+
+* 上述代码，`baz`能够访问并记住`foo`作用域内的变量，且在外部作用域被引用，所以我们可以认为`baz()`形成了闭包
+
+```javascript
+function wait(message) {
+  setTimeout(function timer() {
+    console.log(message);
+  }, 1000);
+}
+wait('Hello, closure!');
+```
+
+* 上述代码中，`timer`能记住并访问`wait`作用域的变量，且在`setTimeout`函数中，必定有个`fn`会持有`timer`作用域的引用，也就是形成了闭包。基于此，我们认为只要使用了回掉函数，就等同于使用了闭包
+
+```javascript
+var a = 2;
+
+(function IIFE() {
+  console.log(a);
+})();
+```
+
+* 上述代码使用了立即执行函数 ITFE，严格来说，并没有形成闭包，因为没有在别的作用域中被调用。但这里确实也使用了闭包，算是一个特别的存在
+
+### 循环与闭包
+
+```javascript
+for (var i = 1; i <= 5; i++) {
+  setTimeout(function timer() {
+    console.log(i);
+  }, i * 1000);
+}
+```
+
+* 由于`i`被当前作用域和其嵌套的作用域共享，而`setTimeout`延迟执行函数会在循环结束之后才运行，所以上述代码会输出 5 个 6，1 秒 1 个
+
+```javascript
+for (var i = 1; i <= 5; i++) {
+  (function(j) {
+    setTimeout(function timer() {
+      console.log(j);
+    }, j * 1000);
+  })(i);
+}
+```
+
+* 上述代码中，每次迭代时立即执行函数都会形成新的作用域，每个作用域存在独立的`j`，所以输出结果是 1,2,3,4,5
+
+```javascript
+for (let i = 1; i <= 5; i++) {
+  setTimeout(function timer() {
+    console.log(i);
+  }, i * 1000);
+}
+```
+
+* 上述代码使用了 es6 的语法`let`，每次迭代都形成了隐藏的作用域，各自保存`i`，所以输出结果是 1,2,3,4,5
+
+### 模块
+
+* 模块模式用于对外暴露公共 api，形成模块需要具备两个条件
+  1. 必须有外部的封闭函数，该函数至少被调用一次
+  2. 封闭函数至少返回一个内部函数，这样才能在形成闭包
+
+```javascript
+var foo = (function CoolModule() {
+  var something = 'cool';
+  function doSomething() {
+    console.log(something);
+  }
+  return {
+    doSomething: doSomething,
+  };
+})();
+foo.doSomething(); // cool
+```
+
+* `CoolModule`是封闭函数且被调用，内部返回了`doSomething`函数的引用，所以可以认为`CoolModule`是个模块，而`foo`接受了一个模块实例
+
+```javascript
+var MyModules = (function Manager() {
+  var modules = {};
+  function define(name, deps, impl) {
+    for (var i = 0; i < deps.length; i++) {
+      deps[i] = modules[deps[i]];
+    }
+    modules[name] = impl.apply(impl, deps);
+  }
+  function get(name) {
+    return modules[name];
+  }
+  return {
+    define: define,
+    get: get,
+  };
+})();
+
+// 定义模块的例子如下
+
+MyModules.define('bar', [], function() {
+  function hello(who) {
+    return 'Let me introduce: ' + who;
+  }
+  return {
+    hello: hello,
+  };
+});
+//['bar']表示需要使用bar模块的方法
+MyModules.define('foo', ['bar'], function(bar) {
+  function awesome() {
+    console.log(bar.hello('hippo'));
+  }
+  return {
+    awesome: awesome,
+  };
+});
+```
+
+* 上述代码是生成模块的公共方法，主要有两个核心点
+  1. `deps[i] = modules[deps[i]]`，根据`deps[i]`找到`modules`中保存的某个模块回掉函数的引用（闭包），并赋值到`deps[i]`中，这样做是为了不同模块可以相互调用各自暴露的方法
+  2. `modules[name] = impl.apply(impl, deps)`，将回掉函数的引用（闭包）保存到`modules`
+
+```javascript
+// bar.js
+function hello(who) {
+return "Let me introduce: " + who;
+}
+export hello;
+
+// foo.js
+// 仅从 "bar" 模块导入 hello()
+import hello from "bar";
+var hungry = "hippo";
+function awesome() {
+  console.log(hello(hungry).toUpperCase());
+}
+export awesome;
+
+// baz.js
+module foo from "foo";
+foo.awesome();
+```
+
+* 上述代码中，`import` `export` `module` 都是 es6 的语法，和传统的模块不同，es6 中 1 个模块 1 个文件，通过`import`导入，`export`导出。`module`是导入整个模块，可以任意使用内部函数
+
+---
+
 ...
