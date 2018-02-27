@@ -1,3 +1,5 @@
+# 作用域和闭包
+
 ## 第一章 作用域是什么
 
 > 一种用于储存和获取变量的规则
@@ -478,6 +480,66 @@ foo.awesome();
 ```
 
 * 上述代码中，`import` `export` `module` 都是 es6 的语法，和传统的模块不同，es6 中 1 个模块 1 个文件，通过`import`导入，`export`导出。`module`是导入整个模块，可以任意使用内部函数
+
+---
+
+# this 和对象原型
+
+## 第一章 关于 this
+
+```javascript
+function identify() {
+  return this.name;
+}
+
+function speak() {
+  console.log('Hello I am ' + identify.call(this));
+}
+
+var me = { name: 'haha' };
+var you = { name: 'hehe' };
+
+speak.call(me); // Hello I am haha
+speak.call(you); // Hello I am hehe
+```
+
+* 如上所示，this 提供一种更优雅的方式来传递一个对象引用，因此可以将代码 api 设计得更加简洁通用
+
+#### this 并不指向函数自身
+
+```javascript
+function foo() {
+  this.count++;
+}
+
+foo.count = 0;
+
+foo();
+
+console.log(foo.count); // 0
+```
+
+* 如上所示，因为 `this` 并不是指向 `foo`，所以`this.count++`并没有使得`foo.count`有任何变化
+
+#### this 并不指向作用域
+
+```javascript
+function foo() {
+  var a = 2;
+  this.bar();
+}
+function bar() {
+  console.log(this.a);
+}
+foo(); // ReferenceError: a is not defined
+```
+
+* 词法作用域在编译阶段已经定义好，一般是不能在执行阶段有所改变的，所以上述代码试图以`this`来沟通`foo`和`bar`之间的作用域，显然是不会成功的
+
+#### this 是什么
+
+* this 是在运行时候被绑定的，并不是在编译阶段。所以 this 的绑定和函数声明的位置没有任何关系，只取决于函数的调用方式
+* 当一个函数被调用时，会创建一个活动记录（也可称之为上下文），该记录包括函数在哪里被调用以及调用方式等，this 就是该记录的其中一个属性
 
 ---
 
