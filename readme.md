@@ -2,7 +2,7 @@
 
 1. [x] 《Head First Java》[阅读笔记](https://github.com/liu-dongyu/reading-plan/blob/master/head-first-java/note.md)
 2. [ ] 《Head First Design》[阅读笔记](https://github.com/liu-dongyu/reading-plan/blob/master/head-first-design/note.md)
-3. [ ] 《Java 并发编程实战》
+3. [ ] 《Java 并发编程实战》[阅读笔记](https://github.com/liu-dongyu/reading-plan/blob/master/java-concurrency-in-practice/note.md)
 4. [ ] 《深入理解 Java 虚拟机》
 5. [ ] 《effective java》
 6. [ ] 《Java 核心技术》
