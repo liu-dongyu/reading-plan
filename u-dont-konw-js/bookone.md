@@ -485,7 +485,7 @@ foo.awesome();
 
 # this 和对象原型
 
-## 第一章 关于 this
+## 第五章 关于 this
 
 ```javascript
 function identify() {
@@ -542,5 +542,79 @@ foo(); // ReferenceError: a is not defined
 * 当一个函数被调用时，会创建一个活动记录（也可称之为上下文），该记录包括函数在哪里被调用以及调用方式等，this 就是该记录的其中一个属性
 
 ---
+
+## 第六章 this 全面解析
+
+### 调用位置
+
+* 调用位置就是函数在代码中被调用的位置，而不是声明的位置
+* 调用栈是为了到达目前所执行的位置所调用的全部函数，调用位置就在正在执行的函数的前一个调用中
+
+```javascript
+function baz {
+  bar();
+}
+
+function bar() {
+  foo();
+}
+
+function foo {
+  consol.log('I am foo');
+}
+
+baz();
+```
+
+* 如上代码所示，`bar`的调用栈是 baz -> bar，所以`bar`调用位置在`baz`中，`foo`的调用栈为 baz -> bar -> foo，所以`foo`的调用位置在`bar`
+* 手动分析在实际代码场景中容易出错，可以使用 chrome 来进行调试，获取当前断点位置的函数调用列表
+
+### 绑定规则
+
+#### 默认绑定
+
+```javascript
+function bar() {
+  console.log(this.a);
+}
+
+var a = 2;
+
+bar(); // 2
+```
+
+* 如上代码所示，`bar()`为直接调用，不带任何修饰，这种情况就称为默认绑定，默认绑定下 this 指向调用位置所在的作用域，所以上述代码的 this 指向全局作用域
+
+```javascript
+function foo() {
+  'use strict';
+
+  console.log(this.a);
+}
+
+var a = 2;
+
+foo(); // TypeError: this is undefined
+```
+
+* 如上代码所示，使用严格模式`'use strict'`时，this 无法通过默认绑定的方式绑定到全局作用域
+
+```javascript
+function foo() {
+  console.log(this.a);
+}
+
+var a = 2;
+
+(function() {
+  'use strict';
+
+  foo(); // 2
+})();
+```
+
+* 如上代码所示，在函数声明的位置使用严格模式才能影响默认绑定，在调用位置声明不会用任何影响。在真实代码场景中，不应该分别定义严格模式，要么全局定义，要么不使用
+
+#### 隐式绑定
 
 ...
