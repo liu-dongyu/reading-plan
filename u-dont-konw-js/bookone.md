@@ -880,4 +880,50 @@ bar.call(obj2); // 2,
 
 ---
 
+## 第七章 对象
+
+### 语法
+
+```javascript
+// 文字语法
+var myObj = { key: 'value' };
+
+// 构造函数形式
+var myObj = new Object();
+myObj.key = 'value';
+```
+
+* 如上述代码所示，对象可以通过文字语法或构造函数形式创建，社区中绝大多数使用文字语法
+
+### 类型
+
+* javascript 一共有 6 种语言类型，string、number、boolean、null、undefined、object
+* 除了 object 之外，其他类型都不属于对象，虽然`typeof null == 'object'`，但这只是语言的 bug，实际上 null 是基本类型
+  * 所有类型在底层都以二进制表示，null 的二进制全是 0，而 js 认为前 3 位的 0 的二进制就是对象
+* 函数比较特别，虽然本质上和对象一样（能够被调用），但如果对函数进行`typeof`会返回`function`。有一种理解是因为函数是 js 的一等公民
+
+#### 内置对象
+
+* javascript 中还有一些对象的子类型，称为内置对象，部分内置对象看起来和基本类型命名一直，但其实并不相等
+  * String、Number、Boolean、Object、Function、Array、Date、RegExp、Error
+* 内置对象实际上是可以当作构造函数的内置函数
+
+```javascript
+var strObj = new String('123');
+var str = '123';
+console.log(str.length); // 3
+console.log(typeof strObj); // object
+console.log(strObj instanceof Object); // true
+console.log(typeof str); // string
+console.log(str instanceof Object); // false
+```
+
+* 上述代码中，`strObj`是构造调用生成的对象，而`str`不属于对象，只是通过文字语法形式生成的字面量，字面量也可以像对象一样访问属性和方法，程序会自动转化，并不需要手动转
+* String、Number、Boolean 通过语法形式生成的就是字面量，通过构造调用生成的就是对象
+* Object、Function、Array、RegExp 两种方式生成的都是对象
+* Date 只能构造调用
+* Error 很少使用，抛出异常时会自动创建，也可以手动构造调用
+
+### 内容
+
 ...
