@@ -1,3 +1,5 @@
+> 所有示例代码都需在浏览器环境下测试，直接使用 nodejs 运行可能会导致结果有所偏差
+
 # 作用域和闭包
 
 ## 第一章 作用域是什么
@@ -615,6 +617,267 @@ var a = 2;
 
 * 如上代码所示，在函数声明的位置使用严格模式才能影响默认绑定，在调用位置声明不会用任何影响。在真实代码场景中，不应该分别定义严格模式，要么全局定义，要么不使用
 
+<div style="height: 1px;background-color: #c8c8c8;width: 100%"></div>
+
 #### 隐式绑定
+
+```javascript
+function foo() {
+  console.log(this.a);
+}
+
+var obj = {
+  a: 2,
+  foo: foo,
+};
+
+var obj1 = {
+  a: 3,
+  obj: obj,
+};
+
+obj.foo(); // 2
+
+obj1.obj.foo(); // 2
+```
+
+* 如上述代码，当函数引用有上下文对象的时候，函数的 this 会绑定到该上下文对象中，该规则称为隐式绑定。值得注意的一点是，this 只会绑定在引用对象链的最后一项
+
+_隐性丢失_
+
+```javascript
+function foo() {
+  console.log(this.a);
+}
+var obj = {
+  a: 2,
+  foo: foo,
+};
+var bar = obj.foo;
+var a = 'oops, global';
+
+bar(); // oops, global
+```
+
+* 如上诉代码，`bar`实际绑定的是`foo`函数的引用，所以等于直接调用`foo()`，并没有上下文对象的引用，所以这里会引用默认绑定
+
+```javascript
+function foo() {
+  console.log(this.a);
+}
+function doFoo(fn) {
+  fn(); // 函数调用位置
+}
+var obj = {
+  a: 2,
+  foo: foo,
+};
+var a = 'oops, global';
+
+doFoo(obj.foo); // oops, global
+```
+
+* 上述代码同样没有在调用位置直接上下文对象来引用，所以实际上还是使用了默认绑定
+
+<div style="height: 1px;background-color: #c8c8c8;width: 100%"></div>
+
+#### 显示绑定
+
+一般使用`.call()` `.apply()` `.bind()` 来强制定义 this 的指向，但依旧无法避免隐性丢失问题
+
+```javascript
+function foo() {
+  console.log(this.a);
+}
+function doFoo(fn) {
+  fn(); // 函数调用位置
+}
+var obj = {
+  a: 2,
+  foo: foo,
+};
+var a = 'oops, global';
+
+doFoo.call(obj, obj.foo); // oops, global
+```
+
+* 如上代码，虽然强制 `doFoo` 的 `this` 指向 `obj`，但由于调用位置函数还是没有对象的上下文，所以实际依旧为默认绑定
+
+硬绑定
+
+```javascript
+function foo() {
+  console.log(this.a);
+}
+
+var obj = {
+  a: 2,
+  foo: foo,
+};
+
+foo.call(obj);
+```
+
+* 通过`call`等函数将上下文对象绑定都函数调用位置即为硬绑定，如上代码所示，`foo.call(obj)`使得代码执行时`this`永远指`obj`，不可变更
+
+api 调用的“上下文”
+
+```javascript
+[1].forEach(
+  function(el) {
+    console.log(el, this.id); // 1 awesome
+  },
+  {
+    id: 'awesome',
+  },
+);
+```
+
+* 如上代码所示，javascript 或者很多第三方库的内置函数都会提供一个可选的参数，用来传递上下文对象，确保回掉函数的`this`指向该对象
+
+<div style="height: 1px;background-color: #c8c8c8;width: 100%"></div>
+
+#### new 绑定
+
+* 与传统的面向对象语言不同，javascript 中`new`并不会实例化某个类，所有的函数都可以被`new`调用，称为构造函数调用。构造函数调用过程会有 4 个步骤
+  1. 创建（构造）一个全新的对象
+  2. 这个对象会被执行[[Prototype]]链接（后续章节会解释）
+  3. 该对象会被绑定到被调用的函数的`this`上
+  4. 如果函数没有指定返回，会默认返回第 1 步中创建的对象
+
+```javascript
+function foo(a) {
+  this.a = a;
+}
+var bar = new foo(2);
+console.log(bar.a); // 2
+```
+
+* 如上代码所示，`new foo(2)`会创建一个新的对象并将该对象绑定到`foo`的`this`上，由于`foo`没有指定返回，所以`bar`默认接收了新建对象的引用，故而`bar.a`输出 2
+
+### 优先级
+
+毫无疑问，默认绑定优先级是最低了，所以不做对比，主要对比隐式绑定、显示绑定和 new 绑定
+
+```javascript
+function foo() {
+  console.log(this.a);
+}
+var obj = {
+  a: 2,
+  foo: foo,
+};
+var obj2 = {
+  a: 3,
+  foo: foo,
+};
+
+obj.foo.call(obj2); // 3
+```
+
+* 如上代码所示，隐性绑定 < 显性绑定
+
+```javascript
+function foo(something) {
+  this.a = something;
+}
+var obj1 = {
+  foo: foo,
+  a: 2,
+};
+
+var bar = new obj1.foo(4);
+
+console.log(obj1.a); // 2
+console.log(bar.a); // 4
+```
+
+* 如上代码所示，new 绑定 > 隐形绑定。（注意：`new`会生成新的对象并且`this`指向该对象，所以并不会改变`obj1`原有的值）
+
+```javascript
+function foo(something) {
+  this.a = something;
+}
+var obj1 = {};
+var bar = foo.bind(obj1);
+bar(2);
+console.log(obj1.a); // 2
+
+var baz = new bar(3);
+console.log(baz.a); // 3
+
+bar(5);
+console.log(obj1.a); // 5
+```
+
+* 如上代码所示
+  * `new`并不能同时和`call`或`apply`使用，无法很好的比对优先级
+  * 除了`bind`，`call` `apply` 都不会生成新的函数，所以使用`bind`来生成硬绑定过的函数
+  * `new`会生成新的对象`baz`，并不会影响原来的`bar`以及`obj1`，也就是说`new`和`bind`之间相互独立，互不影响
+
+### 绑定的例外
+
+某些场景下，`this`绑定规则会失效，重新使用默认绑定方式
+
+#### null 或 undefined 作为 this 对象
+
+```javascript
+var b;
+function foo() {
+  this.b = 100;
+}
+
+foo.call(null);
+
+console.log(b); // 100
+console.log(foo.b); // undefined
+
+// DMZ
+b = undefined;
+var ø = Object.create(null);
+foo.call(ø);
+
+console.log(b); // undefined
+```
+
+* 如上述代码所示，当企图使用 null 或 undefined 做硬绑定时，实际上程序会使用默认绑定，所以`this`被绑定到全局作用域。假如函数内部存在`this`，那么上述代码就会存在风险问题，容易修改了全局对象
+* 更安全的做法是建立一个空对象(DMZ)，再将`this`绑定到该对象上
+
+#### 间接引用
+
+```javascript
+function foo() {
+  console.log(this.a);
+}
+var a = 2;
+var o = { a: 3, foo: foo };
+var p = { a: 4 };
+
+o.foo(); // 3
+(p.foo = o.foo)(); // 2
+```
+
+* 如上述代码所示，`p.foo`实际上指向了`foo`，所以`(p.foo = o.foo)();`会使用默认绑定，属于隐形绑定丢失的一种情况
+
+#### 箭头函数
+
+箭头函数是 es6 中新出的语法，该函数不遵循上述绑定规则，`this`继承外层作用域的`this`
+
+```javascript
+function foo() {
+  return a => {
+    console.log(this.a);
+  };
+}
+var obj1 = { a: 2 };
+var obj2 = { a: 3 };
+var bar = foo.call(obj1);
+
+bar.call(obj2); // 2,
+```
+
+* 如上述代码所示，`=>`代表箭头函数，箭头函数的`this`和`foo`的`this`一致，所以该箭头函数的`this`指向`obj1`对象
+
+---
 
 ...
