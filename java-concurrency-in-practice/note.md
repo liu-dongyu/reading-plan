@@ -49,4 +49,149 @@
 
 ---
 
+## 第二章 线程安全性
+
+* 要编写线程安全的代码，其核心在于要对状态访问操作进行管理，特别是共享的（被多个线程同时访问）和可变的（在其生命周期内可以发生变化）状态
+* 需要采用同步机制来对对象进行访问，才能确保对象是线程安全。不需要被多个线程同时访问则不需要线程安全
+* java 主要的同步机制是 synchronized，它提供了一种独占对象的加锁方式
+* 线程安全性不存在例外情况，哪怕程序目前使用正常，错误也只是早晚的事。当面对没有同步机制而出现的线程安全问题时，有 3 种方法可以尝试修复
+  1. 不在线程中共享该状态变量
+  2. 将改状态变量改为不可改变
+  3. 在访问状态变量时使用同步
+
+### 什么是线程安全性
+
+*  当多个或单一线程访问某个类时，这个类始终都能表现出正确的行为，那么就称该类是线程安全的。由于无法保证类在编写完成之后都按照设想去运行，所以"代码可信度"就比较接近"正确的行为"
+* 无状态对象一定是线程安全的
+
+### 原子性
+
+* 原子性：存在 A、B 两个操作，对于执行 A 操作的线程来说，当另外一个线程执行 B 操作，要么不执行，要么全部执行完。那么 A 和 B 对彼此来说是原子的
+* 原子操作：访问状态的操作不可分割，以一种原子的形式进行
+
+```java
+// NoThreadSafe
+class UnsafeCounting {
+  private long count = 0;
+
+  public long getCount() {
+    return count;
+  }
+
+  public void addCount() {
+    Thread.sleep(1000);
+    ++count;
+  }
+}
+```
+
+* `++count`虽然看上去像是一个操作，但其实该操作并非原子的，实际上包含了读取、修改以及写入三种操作，结果状态依赖于之前的状态。所以当多个线程同步访问时，有可能会导致计算不准确
+
+#### 竞态条件
+
+* 当某个计算的正确性取决于多个线程的交替执行时序时，就会发生竞态条件
+* 最典型的竞态条件就是“先检查后执行”，例如先检查文件 x 是否存在，不存在则执行创建文件 x 操作，但在检查之后与开始执行之前，有可能别的线程已经创建了文件 x，导致之前的检查结果无效，该情况下有可能导致数据覆盖、文件异常等 bug
+* 基于对象之前的状态来定义对象状态的转化也是一种竞态条件，例如`++count`
+* 并不是所有竞态条件都一定会产生错误，还需要某种不恰当的执行时序
+
+#### “先检查后执行”的常见情况：延迟初始化
+
+* 延迟初始化的目的是将对象初始化操作推迟到实际使用时才进行，同时确保只被初始化一次
+
+```java
+@NoThreadSafe
+class unsafeLazyInit() {
+  private SomeClass instance = null;
+
+  public SomeClass getInstance() {
+    if (instance == null) {
+      instance = new SomeClass();
+    }
+    return instance;
+  }
+}
+```
+
+* 上述代码中，假如线程 A、B 同时执行`getInstance`，A、B 都需要判断`instance`是否为空，那么条件执行语句就要取决于不可预测的时序，例如调度器的执行方式、A 初始化`instance`并设置的时间，也就是说多次调用`getInstance`有可能返回不同结果
+
+#### 复合操作
+
+* 复合操作：包含一组以原子方式执行的操作以确保线程安全的操作，例如"读取、修改、写入"
+
+```java
+import java.util.concurrent.atomic.*;
+
+// ThreadSafe
+public class Demo {
+  private static AtomicLong count = new AtomicLong(0);
+
+  public static void main(String[] args) {
+    System.out.println(count.incrementAndGet());
+  }
+}
+```
+
+* 如上述代码所示，`java.util.concurrent.atomic`包中提供了一些原子变量类，可以确保访问操作都是原子的
+
+### 加锁机制
+
+* 要保证状态的一致性，就需要在单个原子操作中更新所有的状态变量
+
+#### 内置锁
+
+```java
+// ThreadSafe
+public class Demo {
+  private static long count = 0;
+
+  synchronized void add() {
+    ++count;
+  }
+
+  void add1() {
+    synchronized (this) {
+      ++count;
+    }
+  }
+
+  public static void main(String[] args) {
+    Demo demo = new Demo();
+    demo.add();
+    demo.add1();
+    System.out.println(count); // 2
+  }
+}
+```
+
+* 如上述代码所示，`synchronized`是 java 提供的内置互斥锁，保证代码块内的操作都是原子的。使用内置锁确实可以保证线程安全，但也会带来性能问题（并发性差），毕竟同一时间只有一个线程能持有该锁
+
+#### 重入
+
+* 内置锁操作的粒度是“线程”而不是“调用”，所用某个线程试图获取一个已经有自己持有的锁不会产生死锁
+* 子类可以重写并调用父类的持有锁的方法
+
+```java
+class father {
+  synchronized void doSomething() {}
+}
+
+class child extends father {
+  synchronized void doSomething() {
+    super.doSomething();
+  }
+}
+```
+
+### 用锁来保护状态
+
+* 对于可能被多个线程同时访问的可变状态变量，在访问他时，都需要持有同一个锁，在这种情况下，我们称状态变量是由这个锁保护的
+* 每个共享的可变的变量都应该只由一个锁来保护，从而使维护人员知道是哪一个锁
+* 一种常见的加锁方式是：将所有可变的状态都封装在对象内部，并通过内置锁对所有访问可变状态的代码路径进行同步，确保该对象上不会发生并发访问
+* 并非所有数据都需要锁，只有被多个线程同时访问的可变数据才需要用锁来保护
+* 当执行时间较长的计算或者可能无法快速完成的操作时（例如 I/O），一定不要持有锁
+
+---
+
+## 第三章 对象的共享
+
 ...
