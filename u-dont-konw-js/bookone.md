@@ -882,7 +882,7 @@ bar.call(obj2); // 2,
 
 ## 第七章 对象
 
-### 语法
+### 7.1 语法
 
 ```javascript
 // 文字语法
@@ -895,14 +895,14 @@ myObj.key = 'value';
 
 * 如上述代码所示，对象可以通过文字语法或构造函数形式创建，社区中绝大多数使用文字语法
 
-### 类型
+### 7.2 类型
 
 * javascript 一共有 6 种语言类型，string、number、boolean、null、undefined、object
 * 除了 object 之外，其他类型都不属于对象，虽然`typeof null == 'object'`，但这只是语言的 bug，实际上 null 是基本类型
   * 所有类型在底层都以二进制表示，null 的二进制全是 0，而 js 认为前 3 位的 0 的二进制就是对象
 * 函数比较特别，虽然本质上和对象一样（能够被调用），但如果对函数进行`typeof`会返回`function`。有一种理解是因为函数是 js 的一等公民
 
-#### 内置对象
+#### 7.2.1 内置对象
 
 * javascript 中还有一些对象的子类型，称为内置对象，部分内置对象看起来和基本类型命名一直，但其实并不相等
   * String、Number、Boolean、Object、Function、Array、Date、RegExp、Error
@@ -924,6 +924,248 @@ console.log(str instanceof Object); // false
 * Date 只能构造调用
 * Error 很少使用，抛出异常时会自动创建，也可以手动构造调用
 
-### 内容
+### 7.3 内容
+
+* 对象的内容并不是储存在对象内部，对象内部保存的是指针，指向真正的位置
+* 访问对象内容有两种方式，`myObj.a`称为属性访问，`myObj[a]`称为键访问，属性访问对命名规范有限制
+* 对象的属性名永远是字符串，所以`myObj[1]`和`myObj['1']`是相等的
+
+#### 7.3.1 可计算属性名
+
+```javascript
+var myObject = {
+  [1 + 2]: 'hello world',
+};
+
+console.log(myObject[3]);
+```
+
+* 可以使用[]包裹表达式来定义属性名字，可计算的属性名是 es6 新增的
+
+#### 7.3.2 属性和方法
+
+```javascript
+function foo() {}
+
+var obj = { foo: foo };
+
+var obj1 = { foo: function() {} };
+```
+
+* 在其他语言中，属于对象的函数通常被任务是方法。而 js 有所不同，函数永远都不会属于方法，无论如何定义，也只是保存了函数的引用而已
+
+#### 7.3.3 数组
+
+```javascript
+var array = ['a', 'b', 'c'];
+array.d = 'd';
+console.log(array.length); // 3
+
+array['3'] = 'd';
+console.log(array.length); // 4
+```
+
+* 数组也是对象，所以也可以直接给数组添加属性。但数组和普通对象都是各自不同的优化方式，所以不要混用，只用对象保存键／值对，只用数组来储存数值下标／值对
+* 如果企图企图使用字符串数字来为数组添加属性，例如`array['3']`，实际上程序会将其转为数值下标
+
+#### 7.3.4 复制对象
+
+```javascript
+// 文章说对函数深复制不知道会发生什么，所以避免对obj进行深复制
+var obj = { a: function() {} };
+
+// 相互引用的对象不要进行深复制，有可能会造成死循环等问题
+var array = [];
+var obj1 = { arr: array };
+array.push(obj1);
+```
+
+* 浅复制：object 以外的基本类型会创建新的值，而 object，例如数组、对象、函数等则只保存了引用，还是指向原来的存储地址
+* 深复制：例如`deepCopy({ a: otherArray })`，程序会从新创建一份新的`otherArray`，`otherArray`属性上的所有 object 也会被重新创建
+* es5 并没有提供复制对象的 api，目前也没有统一的复制方法，不同的 js 框架提出了自己的解决方法。
+* 对于 JSON 安全的对象来说，可以使用如下方法进行深复制
+  * var newObj = JSON.parse( JSON.stringify( someObj ) );
+* es6 提供了进行浅复制的 api，`Object.assign`
+
+#### 7.3.5 属性描述符
+
+```javascript
+var myObject = {
+  a: 2,
+};
+Object.getOwnPropertyDescriptor(myObject, 'a');
+// value: 2,
+// writable: true,
+// enumerable: true,
+// configurable: true
+```
+
+* 如上述代码所示，可以通过`Object.getOwnPropertyDescriptor`获取对象某个属性的属性描述符，属性描述符程序会默认配置
+* writable 决定属性能否被修改，默认 true，当设置为 false 时，属性的值不可修改，严格模式下企图修改不可修改的属性会报错
+* configurable 决定属性能否配置，默认 true，当设置为 false 时，属性无法被删除，除了可以把 writable 改为 false，其余试图修改的操作都会报错，包括再次修改 configurable
+* enumerable 决定属性能否被枚举，用户定义的属性默认 true，当设置为 false 时，该属性不会出现在例如`foo in`等枚举中
+
+#### 7.3.6 不变性
+
+* es5 提供了不少方法来实现不可改变的属性或对象，不过所有方法都是浅不变性，只影响目标对象和他的直接属性，如果目标对象引用了其他对象（数组、对象、函数等），其他对象内容不受影响，依旧可以改变
+* 将 writable 和 configurable 设置为 false，可以实现真正的常量属性（不可删除或修改）
+* `Object.preventExtensions(myObj)`会阻止为对象添加新属性，严格模式下抛错。原有的属性可以修改或删除
+* `Object.seal(myObj)`实际上会调用`Object.preventExtensions`以及将 configurable 设置为 false，所以不可以删除、添加属性以及修改属性描述符
+* `Object.freeze(myObj)`实际上会调用`Object.seal`以及将 writable 设置为 false，所以不可删除、修改、添加属性以及修改属性描述符
+
+#### 7.3.7 [[Get]]
+
+```javascript
+var myObj = { a: 2 };
+myObj.a; // 2
+myObj.b; // undefined
+```
+
+* [[Get]]用于获取属性值，当访问`myObj.a时`，对象内置的[[Get]]操作会先在当前对象中查找是否存在该值，如不存在，会遍历可能存在的原型链（[[Prototype]]），如还是没有找到，则会返回`undefined`
+
+#### 7.3.8 [[Put]]
+
+* [[Put]]用于控制属性值，触发与否取决于多个因素，最重要的就是属性是否存在
+* 当属性存在时，[[Put]]大致分 3 步走
+  1. 属性是否访问描述符，如果是并且存在 setter 则调用 setter
+  2. 属性描述符 writable 是否为 false，如果是，非严格模式下静默失败，严格模式下抛出异常
+  3. 1，2 都不是，则将该值设置为属性的值
+* 当属性不存在时，操作涉及到原型链，后续讲解
+
+#### 7.3.9 Getter 和 Setter
+
+```javascript
+var myObject = {
+  get a() {
+    return this._a_;
+  },
+  set a(val) {
+    this._a_ = val * 2;
+  },
+};
+
+Object.defineProperty(myObject, 'b', {
+  get: function() {
+    return 2;
+  },
+  enumerable: true, // 确保b能被枚举
+});
+
+myObject.a = 2;
+console.log(myObject.a); // 4
+console.log(myObject.b); // 2
+```
+
+* 可以使用 getter 和 setter 改写单个属性的某个规则，但无法改写整个对象
+* 当属性存在 getter 或 setter 时，该属性会被定义为访问描述符，并忽略属性描述符中的 value 和 writable
+* get&set 需要成对出现，只单独定义其中一个可能会导致属性无法获取或者修改
+
+#### 7.3.10 存在性
+
+```javascript
+var myObj = { a: undefined };
+
+// in操作会判断属性是否在对象或者其原型链中
+console.log('a' in myObj); // true
+console.log('b' in myObj); // false
+
+// in操作判断的是属性名，如果用于判断数组，对应的属性名是数值下标
+var arr = [1, 2, 3];
+console.log(0 in arr); // true
+console.log(3 in arr); // false
+
+// hasOwnProperty只判断属性是否在当前对象内部
+console.log(myObj.hasOwnProperty('a')); // true
+console.log(myObj.hasOwnProperty('b')); // false
+
+// 针对没有链接到Object.prototype的对象，可以如下操作
+var obj = Object.create(null);
+console.log(Object.prototype.hasOwnProperty.call(obj, 'a'));
+```
+
+```javascript
+var myObject = {};
+Object.defineProperty(myObject, 'a', { enumerable: true, value: 2 });
+Object.defineProperty(myObject, 'b', { enumerable: false, value: 3 });
+
+// b不可枚举，所以只会输出a
+// for-in只在普通对象上使用，避免在数组上使用
+for (var key in myObject) {
+  console.log(key);
+}
+
+// propertyIsEnumerable会检查属性是否直接存在与对象中且enumerable:true
+console.log(myObject.propertyIsEnumerable('a')); // true
+console.log(myObject.propertyIsEnumerable('b')); // false
+
+// 获取可以枚举的属性列表，且属性直接存在于对象中
+console.log(Object.keys(myObject)); // ["a"]
+
+// 获取所有直接存在于对象的属性列表
+console.log(Object.getOwnPropertyNames(myObject)); // ["a", "b"]
+```
+
+### 7.4 遍历
+
+* 使用`for in`遍历对象的顺序不是固定的，不同的 js 引擎结果可能不一致
+
+```javascript
+var a = [1, 2];
+
+// 标准for循环实际是遍历数值下标，并不是遍历值
+for (var i = 0, len = a.length; i < len; i++) {
+  console.log(a[i]);
+}
+
+// 遍历数组内所有值并忽略回掉函数返回
+a.forEach(function(val) {
+  console.log(val);
+});
+
+// 遍历数组内所有值，直到回掉函数返回false终止
+a.every(function(val) {
+  console.log(val);
+  return false;
+});
+
+// 遍历数组内所有值，直到回掉函数返回true终止
+a.some(function(val) {
+  console.log(val);
+  return true;
+});
+```
+
+```javascript
+// for of是es6提供的新语法，会向访问对象请求一个迭代器，然后通过调用的迭代器的next方法来遍历所有返回值
+
+var a = [1, 2];
+
+// 数组内置了迭代器对象（@@iterator），所以可以直接使用for of
+for (var v of a) {
+  console.log(v);
+}
+
+// 普通对象并没有内置迭代器，要使用for of，得先自行实现迭代器
+var myObject = {
+  a: 2,
+  b: 3,
+  // Symbol.iterator为es6新语法，用于获取对象内部的@@iterator
+  [Symbol.iterator]: function() {
+    return {
+      next: function() {
+        return {
+          value: o[ks[idx++]],
+          // done用于判断是否还有可以遍历的值，没有done会无限循环
+          done: idx > ks.length,
+        };
+      },
+    };
+  },
+};
+```
+
+---
+
+## 第八章 混合对象"类"
 
 ...
