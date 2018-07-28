@@ -13,7 +13,7 @@
 1. [ ] 《算法》
 
 ### 网络基础    
-1. [ ] 《题解HTTP》[阅读笔记](https://github.com/liu-dongyu/reading-plan/blob/master/learn-http/note.md)
+1. [ ] 《图解HTTP》[阅读笔记](https://github.com/liu-dongyu/reading-plan/blob/master/learn-http/note.md)
 
 ### 软件工程相关    
 1. [ ] 《敏捷软件开发， 原则，模式，实践》
