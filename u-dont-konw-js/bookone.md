@@ -276,7 +276,7 @@ function foo() {
   var a = 1;
 
   function bar() {
-    console.log(1);
+    console.log(a);
   }
 
   bar();
