@@ -20,6 +20,56 @@ TCP/IP 分为应用层、传输层、网络层、链路层（加强记忆口诀�
 
 ---
 
+## 第二章：简单的 HTTP 协议
+
+**HTTP 协议**  
+HTTP 协议用于客户端和服务端之间的通信  
+请求报文由请求方法、请求 URL、协议版本、可选的请求首部字段、内容实体构成  
+响应报文由协议版本、状态码、用于解释状态码的短语、可选的响应首部字段、实体主体构成  
+HTTP/1.1 中所有连接默认都是持久连接，持久连接（HTTP keep-alive）减少了 TCP 连接的重复建立和断开所造成的 额外开销，减轻了服务器端的负载
+
+```
+// 请求报文例子
+
+// 方法 请求URL 请求协议
+POST /form/entry HTTP/1.1
+// 请求首部字段
+Host: hackr.jp
+Connection: keep-alive
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 16
+// 内容实体
+name=ueno&age=37
+```
+
+```
+// 响应报文例子
+
+// 协议版本 状态嘛 解释状态码短语
+HTTP/1.1 200 OK
+// 响应请求的时间，响应首部字段之一
+Date: Tue, 10 Jul 2012 06:50:15 GMT
+Content-Length: 362
+Content-Type: text/html
+
+// 实体主体
+name=ueno&age=37
+```
+
+**请求方法**
+
+- GET：获取服务器上某种资源
+- POST：向服务器传递实体数据
+- PUT：传输文件
+- DELETE：删除资源
+- OPTION：询问对应请求 URL 支持的请求方法
+- HEAD：获取报文首部
+
+**Cookie**  
+http 协议是无状态的，不会对请求或响应结果做持久化，例如 HTTP 协议本身并不知道用户是否已经成功登录。Cookie 通过在请求报文(Cookie)和响应报文(Set-Cookie)中写入信息来控制客户端和服务端状态
+
+---
+
 ## 第七章：确保 Web 安全的 HTTPS
 
 **HTTP 缺点**
