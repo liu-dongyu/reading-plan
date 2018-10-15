@@ -1266,6 +1266,8 @@ class Car inherits Vehicle { wheels = 4
 
 ## 第九章 原型
 
+如果一个对象没有找到需要的属性或方法引用，引擎就会在[[Prototype]]上继续查找，直到`Object.prototype`，这一系列对象的链接被称为“原型链”，这个机制的本质就是对象和对象的关联关系
+
 ### 9.1 [[Prototype]]
 
 ```javascript
@@ -1299,7 +1301,7 @@ var anotherObj = { a: 1 };
 var obj = Object.create(anotherObj);
 
 //!! 要避免这种情况的发生，obj.a++等同于obj.a = obj.a + 1，
-//!! 该操作会先在[[Prototype]]上获取a对应的值2，然后给这个加1，接着为obj创建新的屏蔽属性a并赋值为3
+//!! 该操作会先在[[Prototype]]上获取a对应的值2，然后给这个值加1，接着为obj创建新的屏蔽属性a并赋值为3
 //!! 修改委托属性时，唯一办法就是直接操作原对象，例如anotherObj.a++
 obj.a++;
 ```
@@ -1437,5 +1439,135 @@ bar.do2 = function() {
 };
 bar.do2();
 ```
+
+---
+
+## 第十章 行为委托
+
+本周从多个方面比较了类风格设计模式和行为委托设计模式的优劣，并在 js 中，认为行为委托虽然少见但更可靠。
+
+### 比较代码风格
+
+```
+// 伪代码
+// 使用类来设计，一般会将通用行为抽象到父类，子类继承父类并重写方法，也可以使用super来对原方法进行调用
+
+// 父类，抽象通用方法
+class Task {
+  id;
+
+  Parent(ID) { id = ID }
+  outputMsg() { output(id) }
+}
+
+// 子类继承父类，通过实例话子类可得到所有相关方法
+class XYZ extend Task {
+  name;
+
+  Son(ID, NAME) { super(ID);  name = NAME}
+  outputMsg() { super(); output(name) }
+}
+```
+
+```javascript
+// 文中将通过Object.creat委托[[Prototype]]称为行为委托，也叫做对象关联
+// 行为委托和类风格设计有如下不同
+// 1. 数据直接保存在委托者身上，例如id,name都在XYZ对象上
+// 2. 父类中的方法一般会使用通用的方法名，以便发挥多态的威力，但行为委托中，为了避免[[Prototpye]]属性屏蔽等问题，一般//    会使用更具备描述性的方法
+// 3. 行为委托意味着当某些方法和属性在原对象上找不到的时候，就会在委托目标上查找
+
+Task = {
+  setId: function(ID) {
+    this.id = ID;
+  },
+  outputId: function() {
+    console.log(this.id);
+  },
+};
+
+// 通过Object.creat创建XYZ对象，它的[[Prototype]]委托了Task对象
+XYZ = Object.creat(Parent);
+XYZ.prepare = function(ID, name) {
+  this.setId(ID);
+  this.name = name;
+};
+XYZ.outputName = function(name) {
+  this.outputId();
+  console.log(this.name);
+};
+```
+
+类设计组织从父到子，从上至下垂直组织，而行为委托对象并排组织，任意对象都能委托到另外一个对象上。两者都具备使用场景，文中之所以反对在 js 中使用类设计，是因为 js 原生没有类的机制，纵然可以模拟，也属于逆流而上，对抗事实。
+
+```javascript
+// 不允许对两个或两个以上的对象相互委托，会报错
+
+var a = {};
+var b = Object.create(a);
+a.__proto__ = b;
+
+// abc不在a对象上，会根据[[Prototype]]到b上查询，由于b上也没有，又回到a，会产生一条无限递归的原型链
+a.abc = 1;
+```
+
+### 比较思维模型
+
+```javascript
+function Foo(who) {
+  this.me = who;
+}
+Foo.prototype.identify = function() {
+  return 'I am ' + this.me;
+};
+function Bar(who) {
+  Foo.call(this, who);
+}
+Bar.prototype = Object.create(Foo.prototype);
+Bar.prototype.speak = function() {
+  // Bar.prototype委托给了Foo.prototype，identify根据[[Pritotype]]会在Foo.prototype上找到
+  alert('Hello, ' + this.identify());
+};
+
+var b1 = new Bar('b1');
+var b2 = new Bar('b2');
+
+// speak方法不存在于b1对象上，通过[[Prototype]]查找到Bar.prototype
+b1.speak();
+b2.speak();
+
+b1.me = 1;
+
+// 由于Bar.prototype委托给了Foo.prototype，所以在b1的[[Prototype]]指向Foo
+console.log(b1.constructor); // Foo
+```
+
+<img src="./img/1.jpg" width="500" />
+
+类风格代码的思维模型更看重实体和实体之间的关系，如上图所示，有点复杂
+
+```javascript
+var Foo = {
+  init: function(who) {
+    this.me = who;
+  },
+  identify: function() {
+    return 'I am ' + this.me;
+  },
+};
+var Bar = Object.create(Foo);
+Bar.speak = function() {
+  alert('Hello, ' + this.identify() + '.');
+};
+var b1 = Object.create(Bar);
+b1.init('b1');
+var b2 = Object.create(Bar);
+b2.init( "b2" );
+b1.speak();
+b2.speak();
+```
+
+<img src="./img/2.jpg" width="500" />
+
+行为委托风格的代码主关注一件事，对象与对象之间的关联，书写上也更加简洁
 
 ...
