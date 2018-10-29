@@ -1561,7 +1561,7 @@ Bar.speak = function() {
 var b1 = Object.create(Bar);
 b1.init('b1');
 var b2 = Object.create(Bar);
-b2.init( "b2" );
+b2.init('b2');
 b1.speak();
 b2.speak();
 ```
@@ -1570,4 +1570,126 @@ b2.speak();
 
 行为委托风格的代码主关注一件事，对象与对象之间的关联，书写上也更加简洁
 
-...
+---
+
+## 附加 ES6 中的 Class
+
+### ES6 引入了原生 class 机制，具体如下
+
+```javascript
+// 不在需要引用prototype等，使用友好的class定义
+class Widget {
+  constructor(width) {
+    this.width = width;
+  }
+  render(where) {
+    console.log(where);
+  }
+}
+
+// 使用extend表示继承了Widget，不在需要使用Object.create等
+class Button extend Widget {
+  constructor(widthm label) {
+    super(width);
+    this.label = label;
+  }
+  render(where) {
+    // 通过super来引用原型链上层的方法
+    super.render(where);
+  }
+}
+```
+
+### ES6 中的 class 并不是一种新的机制，只是 [[Prototype]]机制的一种语法糖，使用过程中会有一些陷阱
+
+```javascript
+// 子类并不会复制父类的方法或属性，只是一种基于[[Prototype]]的委托
+
+class C {
+  constructor() {
+    this.num = Math.random();
+  }
+  rand() {
+    console.log('Random: ' + this.num);
+  }
+}
+var c1 = new C();
+c1.rand(); // "Random: 0.4324299..."
+
+// 此处方法变更会影响所有new出来的对象，包括已存在的
+C.prototype.rand = function() {
+  console.log('Random: ' + Math.round(this.num * 1000));
+};
+var c2 = new C();
+c2.rand(); // "Random: 867"
+c1.rand(); // "Random: 432" 􏲟􏲟􏴷􏳛
+```
+
+```javascript
+// class不能定义成员变量，如果要定义实例之间的共享状态，必须使用prototype
+
+class C {
+  constructor() {
+    // 如果直接使用this.count++，那么c1,c2对象上都是创建count属性，并不是我们想要的共享
+    // 但直接使用prototype，又违背了class的本意
+    C.prototype.count++;
+  }
+}
+C.prototype.count = 0;
+
+var c1 = new C(); // Hello: 1
+var c2 = new C(); // Hello: 2
+
+console.log(c1.count === 2); // true
+console.log(c1.count === c2.count); // true
+```
+
+```javascript
+// class可能面临属性屏蔽的问题
+
+class C {
+  constructor(id) {
+    this.id = id;
+  }
+  id() {
+    console.log(this.id);
+  }
+}
+
+var c1 = new C('1');
+
+c1.id(); // TypeError id()被id屏蔽了
+```
+
+```javascript
+// 和this不同，this绑定是在运行时发生的，取决于调用位置
+// 而super是静态绑定，由创建位置决定
+
+class P {
+  foo() {
+    console.log('P.foo');
+  }
+}
+class C extends P {
+  foo() {
+    super();
+  }
+}
+
+var c1 = new C();
+c1.foo(); // "P.foo"
+
+var D = {
+  foo: function() {
+    console.log('D.foo');
+  },
+};
+var E = {
+  foo: C.prototype.foo,
+};
+
+Object.setPrototypeOf(E, D);
+
+// 始终都是P.foo，因为super绑定是在创建时候静态绑定的
+E.foo();
+```
