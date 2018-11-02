@@ -4,7 +4,7 @@
 
 ### javascript
 
-1. [x] 《你不知道的 javascript》上卷 [阅读笔记](https://github.com/liu-dongyu/reading-plan/blob/master/u-dont-konw-js/bookone.md)
+1. [x] 《你不知道的 javascript》上卷 [阅读笔记](https://github.com/liu-dongyu/reading-plan/blob/master/u-dont-konw-js/note.md)
 2. [ ] 《你不知道的 javascript》中卷 [阅读笔记](https://github.com/liu-dongyu/reading-plan/blob/master/u-dont-konw-js-II/note.md)
 3. [ ] 《你不知道的 javascript》下卷
 
