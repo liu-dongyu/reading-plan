@@ -4,69 +4,41 @@
 
 ## 第一章 作用域是什么
 
-### 编译原理
+### 编译过程
 
-1.  传统编译语言流程如下
-    1.  分词/词法分析
-        - 将字符串分解成有意义的代码块，称为词法单元
-        - 分词和词法分析主要差异在于词法单元的识别是通过有状态还是无状态的方式进行，例如`a`属于词法单元且同时属于其他词法单元的一部分，调用的是用状态的的解析规则，称为词法分析
-        - 例如`var a = 2;`，会被分解为`var` `a` `=` `2` `;`，空格是否作为词法单元取决与在这门语言中时候有意义
-    2.  解析/语法分析
-        - 将词法单元流（数组）转化为一个由元素逐级潜逃组成的程序语法结构树，称为抽象语法树（abstract syntax tree AST）
-        - `var a = 2;`的 AST 如右图<img src="./img/AST.jpeg" width="300" />
-    3.  代码生成
-        - 将`var a = 2;`的 AST 转化为机器指令
-2.  js 属于编译语言，但和传统的不一样，js 不是提前编译的，编译结果也不能运行在分布式系统中
-3.  js 会在语法分析和代码生成阶段拥有特殊的步骤对对运行性能以及冗余元素进行优化
-4.  任何 js 代码运行前都需要编译， 编译需要几微秒（甚至更短）
+JavaScript 属于编译语言，编译过程主要经历三个步骤
+
+1. 分词/词法分析，例如将`var a = 2;`分解为有意义的代码块
+2. 解析/语法分析，将代码块转化为由元素嵌套组成的结构树，称为抽象语法树
+3. 代码生成，将抽象语法树转为可执行的代码
+
+传统编译语言多数为构建前编译（例如 java），而 JavaScript 是在执行前编译，大多数编译情况都发生在代码执行前几毫秒内
 
 ### 理解作用域
 
-#### 相关介绍
+作用域是一套规则，用于确定在何处以及如何查找变量（标识符），如果查找的目的是对变量进行赋值，那就会使用 LHS 查询；如果查询的目的是获取变量的值，则使用 RHS 查询。  
+一般一个块或者函数表示一个作用域，两个作用域可能会发生嵌套
 
-- 引擎：负责整个 js 的编译和执行
-- 编译器：负责语法分析和代码生成等
-- 作用域：负责收集和维护所有声明的变量组成的一些列查询，并实施一套严格的规则，确定当前代码对这些变量的访问权限
+**什么是作用域嵌套**
 
-#### 赋值操作
-
-`var a = 2;`，变量的赋值操作一般会执行两个动作
-
-- 编译器在当前作用域新建一个变量（如果之前没有）
-- 运行过程中，引擎会在作用域中寻找 a 变量，并赋值为 2，若没有找到则会抛出异常
-
-#### 引擎如何执行查找
-
-- 引擎在查找过程中会执行 LHS 或 RHS 查询，RHS 与简单查找某个变量的值一样，LHS 则是查找值的容器。L 和 R 代表左和右，意味着赋值操作的左边和右边，赋值操作并不单指`=`
-- `console.log(a);`，由于`a`没有任何赋值，所以这里执行的是 RHS 查询，查找`a`对应的值
-- `var a = 2;`，这里执行 LHS 查询， 需要先找到变量`a`才能用于`= 2`赋值
+如果一个函数内存在另外一个函数，就会发生作用域嵌套，查询规则会逐级往上，直至找到或到达顶层作用域（浏览器环境顶层作用域应该是 window）
 
 ```javascript
-/**
- * 1. c = .. LHS
- * 2. foo(2) RHS
- * 3. foo(a) -> a = 2 LHS
- * 4. b = a，对b进行LHS，对a进行RHS
- * 4. a + b，对a进行RHS，对b进行RHS
- */
+// a和b之间发生了作用域嵌套
+function a() {
+  var a = 1;
 
-function foo(a) {
-  var b = a;
-  return a + b;
+  function b() {
+    var b = 2;
+    return a + b;
+  }
 }
-var c = foo(2);
 ```
 
-#### 作用域嵌套
+**什么是 LHS、RHS 查询**
 
-当一个块或函数嵌套在另外一个块或函数中，就触发作用域嵌套，在当前作用域无法找到某个变量时，引擎会在嵌套的外层作用域继续寻找，直到全局作用域，而后无论是否找到，整个过程都会终止
-
-#### 异常
-
-- 找不到变量时,LHS 会在全局作用域创建一个变量（严格模式下会抛出 ReferenceError）
-- 找不到变量时,RHS 则会抛出 ReferenceError 异常
-- 如果 RHS 查询找到了一个变量，但是你尝试对这个变量的值进行不合理的操作， 比如试图对一个非函数类型的值进行函数调用，或者引用`null`或`undefined`类型的值中的属性，那么引擎会抛出另外一种类型的异常，叫作 TypeError
-- ReferenceError 同作用域判别失败相关，而 TypeError 则代表作用域判别成功了，但是对结果的操作是非法或不合理的。
+LHS 为左查询，一般出现在赋值操作的左端，表示要找到某个容器，例如`var a = 1`，这里`a`会进行左查询，作用域会返回相应的容器，如果当前作用域无法找到，则逐级往上，直达顶层作用域（浏览器环境应该是 window），如果顶层作用域也无法找到，非严格模式下会自动在顶层作用域创建一个变量，严格模式下会抛出`ReferenceError`  
+RHS 为右查询，一般出现在赋值操作的右端，表示要找到某个值，例如`var a = b`，这里`b`会进行右边查询，作用域会返回相应的值，同样会逐级往上查询，顶层作用域无法找到则抛出`ReferenceError`
 
 ---
 
@@ -97,7 +69,7 @@ function foo(str, a) {
   console.log(a, b); // 1, 3
 }
 var b = 2;
-foo('var b = 3;', 1);
+foo("var b = 3;", 1);
 ```
 
 ```javascript
@@ -109,10 +81,10 @@ function foo(obj) {
   }
 }
 var o1 = {
-  a: 3,
+  a: 3
 };
 var o2 = {
-  b: 3,
+  b: 3
 };
 foo(o1);
 foo(o2);
@@ -345,7 +317,7 @@ function wait(message) {
     console.log(message);
   }, 1000);
 }
-wait('Hello, closure!');
+wait("Hello, closure!");
 ```
 
 - 上述代码中，`timer`能记住并访问`wait`作用域的变量，且在`setTimeout`函数中，必定有个`fn`会持有`timer`作用域的引用，也就是形成了闭包。基于此，我们认为只要使用了回掉函数，就等同于使用了闭包
@@ -402,12 +374,12 @@ for (let i = 1; i <= 5; i++) {
 
 ```javascript
 var foo = (function CoolModule() {
-  var something = 'cool';
+  var something = "cool";
   function doSomething() {
     console.log(something);
   }
   return {
-    doSomething: doSomething,
+    doSomething: doSomething
   };
 })();
 foo.doSomething(); // cool
@@ -429,27 +401,27 @@ var MyModules = (function Manager() {
   }
   return {
     define: define,
-    get: get,
+    get: get
   };
 })();
 
 // 定义模块的例子如下
 
-MyModules.define('bar', [], function() {
+MyModules.define("bar", [], function() {
   function hello(who) {
-    return 'Let me introduce: ' + who;
+    return "Let me introduce: " + who;
   }
   return {
-    hello: hello,
+    hello: hello
   };
 });
 //['bar']表示需要使用bar模块的方法
-MyModules.define('foo', ['bar'], function(bar) {
+MyModules.define("foo", ["bar"], function(bar) {
   function awesome() {
-    console.log(bar.hello('hippo'));
+    console.log(bar.hello("hippo"));
   }
   return {
-    awesome: awesome,
+    awesome: awesome
   };
 });
 ```
@@ -493,11 +465,11 @@ function identify() {
 }
 
 function speak() {
-  console.log('Hello I am ' + identify.call(this));
+  console.log("Hello I am " + identify.call(this));
 }
 
-var me = { name: 'haha' };
-var you = { name: 'hehe' };
+var me = { name: "haha" };
+var you = { name: "hehe" };
 
 speak.call(me); // Hello I am haha
 speak.call(you); // Hello I am hehe
@@ -587,7 +559,7 @@ bar(); // 2
 
 ```javascript
 function foo() {
-  'use strict';
+  "use strict";
 
   console.log(this.a);
 }
@@ -607,7 +579,7 @@ function foo() {
 var a = 2;
 
 (function() {
-  'use strict';
+  "use strict";
 
   foo(); // 2
 })();
@@ -626,12 +598,12 @@ function foo() {
 
 var obj = {
   a: 2,
-  foo: foo,
+  foo: foo
 };
 
 var obj1 = {
   a: 3,
-  obj: obj,
+  obj: obj
 };
 
 obj.foo(); // 2
@@ -649,10 +621,10 @@ function foo() {
 }
 var obj = {
   a: 2,
-  foo: foo,
+  foo: foo
 };
 var bar = obj.foo;
-var a = 'oops, global';
+var a = "oops, global";
 
 bar(); // oops, global
 ```
@@ -668,9 +640,9 @@ function doFoo(fn) {
 }
 var obj = {
   a: 2,
-  foo: foo,
+  foo: foo
 };
-var a = 'oops, global';
+var a = "oops, global";
 
 doFoo(obj.foo); // oops, global
 ```
@@ -692,9 +664,9 @@ function doFoo(fn) {
 }
 var obj = {
   a: 2,
-  foo: foo,
+  foo: foo
 };
-var a = 'oops, global';
+var a = "oops, global";
 
 doFoo.call(obj, obj.foo); // oops, global
 ```
@@ -710,7 +682,7 @@ function foo() {
 
 var obj = {
   a: 2,
-  foo: foo,
+  foo: foo
 };
 
 foo.call(obj);
@@ -726,8 +698,8 @@ api 调用的“上下文”
     console.log(el, this.id); // 1 awesome
   },
   {
-    id: 'awesome',
-  },
+    id: "awesome"
+  }
 );
 ```
 
@@ -763,11 +735,11 @@ function foo() {
 }
 var obj = {
   a: 2,
-  foo: foo,
+  foo: foo
 };
 var obj2 = {
   a: 3,
-  foo: foo,
+  foo: foo
 };
 
 obj.foo.call(obj2); // 3
@@ -781,7 +753,7 @@ function foo(something) {
 }
 var obj1 = {
   foo: foo,
-  a: 2,
+  a: 2
 };
 
 var bar = new obj1.foo(4);
@@ -884,11 +856,11 @@ bar.call(obj2); // 2,
 
 ```javascript
 // 文字语法
-var myObj = { key: 'value' };
+var myObj = { key: "value" };
 
 // 构造函数形式
 var myObj = new Object();
-myObj.key = 'value';
+myObj.key = "value";
 ```
 
 - 如上述代码所示，对象可以通过文字语法或构造函数形式创建，社区中绝大多数使用文字语法
@@ -907,8 +879,8 @@ myObj.key = 'value';
 - 内置对象实际上是可以当作构造函数的内置函数
 
 ```javascript
-var strObj = new String('123');
-var str = '123';
+var strObj = new String("123");
+var str = "123";
 console.log(str.length); // 3
 console.log(typeof strObj); // object
 console.log(strObj instanceof Object); // true
@@ -932,7 +904,7 @@ console.log(str instanceof Object); // false
 
 ```javascript
 var myObject = {
-  [1 + 2]: 'hello world',
+  [1 + 2]: "hello world"
 };
 
 console.log(myObject[3]);
@@ -955,11 +927,11 @@ var obj1 = { foo: function() {} };
 #### 7.3.3 数组
 
 ```javascript
-var array = ['a', 'b', 'c'];
-array.d = 'd';
+var array = ["a", "b", "c"];
+array.d = "d";
 console.log(array.length); // 3
 
-array['3'] = 'd';
+array["3"] = "d";
 console.log(array.length); // 4
 ```
 
@@ -989,9 +961,9 @@ array.push(obj1);
 
 ```javascript
 var myObject = {
-  a: 2,
+  a: 2
 };
-Object.getOwnPropertyDescriptor(myObject, 'a');
+Object.getOwnPropertyDescriptor(myObject, "a");
 // value: 2,
 // writable: true,
 // enumerable: true,
@@ -1039,14 +1011,14 @@ var myObject = {
   },
   set a(val) {
     this._a_ = val * 2;
-  },
+  }
 };
 
-Object.defineProperty(myObject, 'b', {
+Object.defineProperty(myObject, "b", {
   get: function() {
     return 2;
   },
-  enumerable: true, // 确保b能被枚举
+  enumerable: true // 确保b能被枚举
 });
 
 myObject.a = 2;
@@ -1064,8 +1036,8 @@ console.log(myObject.b); // 2
 var myObj = { a: undefined };
 
 // in操作会判断属性是否在对象或者其原型链中
-console.log('a' in myObj); // true
-console.log('b' in myObj); // false
+console.log("a" in myObj); // true
+console.log("b" in myObj); // false
 
 // in操作判断的是属性名，如果用于判断数组，对应的属性名是数值下标
 var arr = [1, 2, 3];
@@ -1073,18 +1045,18 @@ console.log(0 in arr); // true
 console.log(3 in arr); // false
 
 // hasOwnProperty只判断属性是否在当前对象内部
-console.log(myObj.hasOwnProperty('a')); // true
-console.log(myObj.hasOwnProperty('b')); // false
+console.log(myObj.hasOwnProperty("a")); // true
+console.log(myObj.hasOwnProperty("b")); // false
 
 // 针对没有链接到Object.prototype的对象，可以如下操作
 var obj = Object.create(null);
-console.log(Object.prototype.hasOwnProperty.call(obj, 'a'));
+console.log(Object.prototype.hasOwnProperty.call(obj, "a"));
 ```
 
 ```javascript
 var myObject = {};
-Object.defineProperty(myObject, 'a', { enumerable: true, value: 2 });
-Object.defineProperty(myObject, 'b', { enumerable: false, value: 3 });
+Object.defineProperty(myObject, "a", { enumerable: true, value: 2 });
+Object.defineProperty(myObject, "b", { enumerable: false, value: 3 });
 
 // b不可枚举，所以只会输出a
 // for-in只在普通对象上使用，避免在数组上使用
@@ -1093,8 +1065,8 @@ for (var key in myObject) {
 }
 
 // propertyIsEnumerable会检查属性是否直接存在与对象中且enumerable:true
-console.log(myObject.propertyIsEnumerable('a')); // true
-console.log(myObject.propertyIsEnumerable('b')); // false
+console.log(myObject.propertyIsEnumerable("a")); // true
+console.log(myObject.propertyIsEnumerable("b")); // false
 
 // 获取可以枚举的属性列表，且属性直接存在于对象中
 console.log(Object.keys(myObject)); // ["a"]
@@ -1154,11 +1126,11 @@ var myObject = {
         return {
           value: o[ks[idx++]],
           // done用于判断是否还有可以遍历的值，没有done会无限循环
-          done: idx > ks.length,
+          done: idx > ks.length
         };
-      },
+      }
     };
-  },
+  }
 };
 ```
 
@@ -1335,7 +1307,7 @@ var a = new Foo();
 ```javascript
 // 在js中，并没有天然的构造函数，例如NothingSpecial只是一个普通的函数
 function NothingSpecial() {
-  console.log('Hello');
+  console.log("Hello");
 }
 
 // 当被new调用时，无论如何都会“构造”一个新的对象并赋值给a，我们一般称这种方式为构造函数调用
@@ -1424,8 +1396,8 @@ var a = Object.create(null);
 
 var foo = {
   do: function() {
-    console.log('Do something');
-  },
+    console.log("Do something");
+  }
 };
 // 文中认为Object.create能充分发挥[[Prototype]]机制的威力，且避免不必要的麻烦
 var bar = Object.create(foo);
@@ -1482,7 +1454,7 @@ Task = {
   },
   outputId: function() {
     console.log(this.id);
-  },
+  }
 };
 
 // 通过Object.creat创建XYZ对象，它的[[Prototype]]委托了Task对象
@@ -1517,7 +1489,7 @@ function Foo(who) {
   this.me = who;
 }
 Foo.prototype.identify = function() {
-  return 'I am ' + this.me;
+  return "I am " + this.me;
 };
 function Bar(who) {
   Foo.call(this, who);
@@ -1525,11 +1497,11 @@ function Bar(who) {
 Bar.prototype = Object.create(Foo.prototype);
 Bar.prototype.speak = function() {
   // Bar.prototype委托给了Foo.prototype，identify根据[[Pritotype]]会在Foo.prototype上找到
-  alert('Hello, ' + this.identify());
+  alert("Hello, " + this.identify());
 };
 
-var b1 = new Bar('b1');
-var b2 = new Bar('b2');
+var b1 = new Bar("b1");
+var b2 = new Bar("b2");
 
 // speak方法不存在于b1对象上，通过[[Prototype]]查找到Bar.prototype
 b1.speak();
@@ -1551,17 +1523,17 @@ var Foo = {
     this.me = who;
   },
   identify: function() {
-    return 'I am ' + this.me;
-  },
+    return "I am " + this.me;
+  }
 };
 var Bar = Object.create(Foo);
 Bar.speak = function() {
-  alert('Hello, ' + this.identify() + '.');
+  alert("Hello, " + this.identify() + ".");
 };
 var b1 = Object.create(Bar);
-b1.init('b1');
+b1.init("b1");
 var b2 = Object.create(Bar);
-b2.init('b2');
+b2.init("b2");
 b1.speak();
 b2.speak();
 ```
@@ -1610,7 +1582,7 @@ class C {
     this.num = Math.random();
   }
   rand() {
-    console.log('Random: ' + this.num);
+    console.log("Random: " + this.num);
   }
 }
 var c1 = new C();
@@ -1618,7 +1590,7 @@ c1.rand(); // "Random: 0.4324299..."
 
 // 此处方法变更会影响所有new出来的对象，包括已存在的
 C.prototype.rand = function() {
-  console.log('Random: ' + Math.round(this.num * 1000));
+  console.log("Random: " + Math.round(this.num * 1000));
 };
 var c2 = new C();
 c2.rand(); // "Random: 867"
@@ -1656,7 +1628,7 @@ class C {
   }
 }
 
-var c1 = new C('1');
+var c1 = new C("1");
 
 c1.id(); // TypeError id()被id屏蔽了
 ```
@@ -1667,7 +1639,7 @@ c1.id(); // TypeError id()被id屏蔽了
 
 class P {
   foo() {
-    console.log('P.foo');
+    console.log("P.foo");
   }
 }
 class C extends P {
@@ -1681,11 +1653,11 @@ c1.foo(); // "P.foo"
 
 var D = {
   foo: function() {
-    console.log('D.foo');
-  },
+    console.log("D.foo");
+  }
 };
 var E = {
-  foo: C.prototype.foo,
+  foo: C.prototype.foo
 };
 
 Object.setPrototypeOf(E, D);
